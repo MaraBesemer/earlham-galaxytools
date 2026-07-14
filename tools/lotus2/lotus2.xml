@@ -229,7 +229,7 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
                 <option value="paired_collection">Paired-end list</option>
             </param>
             <when value="single">
-                <param name="input" type="data_collection" collection_type="list" format="fastqsanger,fastqsanger.gz" label="List of single-end reads" />
+                <param name="input" type="data" format="fastqsanger,fastqsanger.gz" multiple="true" label="Single-end reads" />
             </when>
 <!--
             <when value="paired">
@@ -388,24 +388,22 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
         <test>
             <conditional name="inputs">
                 <param name="paired_or_single" value="single"/>
-                <param name="input">
-                    <collection type="list">
-                        <element name="Anh_sample1" value="Arabidopsis_R1.fastqsanger.gz" ftype="fastqsanger.gz" />
-                    </collection>
-                </param>
+                <param name="input" value="Anh_sample1.fastq.gz,Anh_sample2.fastq.gz" ftype="fastqsanger.gz"/>
+            </conditional>
+            <conditional name="clu_cond">
+                <param name="clustering" value="3" />
             </conditional>
             <section name="tax_args">
                 <param name="lulu" value="false" />
             </section>
             <output name="otu">
                 <assert_contents>
-                    <has_line line="OTU&#009;Anh_sample1" />
-                    <has_line_matching expression="^OTU32.*" />
+                    <has_line line="OTU&#009;Anh_sample1.fastq.gz&#009;Anh_sample2.fastq.gz" />
                 </assert_contents>
             </output>
             <output name="otu_fna">
                 <assert_contents>
-                    <has_text text="&gt;ASV1" />
+                    <has_text text="&gt;OTU1" />
                 </assert_contents>
             </output>
             <output name="mapping" file="mapping.txt" compare="diff" />
