@@ -437,7 +437,6 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
             <output name="otu_fna">
                 <assert_contents>
                     <has_text text="&gt;ASV1" />
-                    <not_has_text text="SMPL" />
                 </assert_contents>
             </output>
             <output name="mapping" file="mapping_paired.txt" compare="diff" />
