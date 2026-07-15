@@ -395,6 +395,7 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
             </conditional>
             <section name="tax_args">
                 <param name="lulu" value="false" />
+                <param name="buildPhylo" value="0" />
             </section>
             <output name="otu">
                 <assert_contents>
@@ -424,6 +425,7 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
             </conditional>
             <section name="tax_args">
                 <param name="lulu" value="true" />
+                <param name="buildPhylo" value="0" />
             </section>
             <output name="otu">
                 <assert_contents>
