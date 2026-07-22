@@ -1,4 +1,4 @@
-<tool id="lotus2" name="LotuS2" version="@VERSION@+galaxy2" profile="20.09">
+<tool id="lotus2" name="LotuS2" version="@VERSION@+galaxy3" profile="20.09">
     <description>fast OTU processing pipeline</description>
     <macros>
         <token name="@VERSION@">2.32</token>
@@ -193,6 +193,10 @@ lotus2
 #end if
 ; EXIT_VALUE=\$? ;
 
+if [ "\$EXIT_VALUE" -eq 0 ]; then
+    Rscript '$export_phyloseq_rds';
+fi
+&&
 zip -8 -r -v output.zip output/
 &&
 exit \$EXIT_VALUE
@@ -220,6 +224,28 @@ ${sample_identifier($f)}	${symlink_basename($f)}	a
 ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.reverse.dataset)}	a
     #end for
 #end if
+]]></configfile>
+        <configfile name="export_phyloseq_rds"><![CDATA[
+loaded_objects <- load("output/phyloseq.Rdata")
+
+if (length(loaded_objects) == 1) {
+    phyloseq_object <- get(loaded_objects)
+} else {
+    phyloseq_candidates <- loaded_objects[
+        vapply(loaded_objects, function(name) inherits(get(name), "phyloseq"), logical(1))
+    ]
+
+    if (length(phyloseq_candidates) != 1) {
+        stop(
+            "Expected one phyloseq object in output/phyloseq.Rdata, found ",
+            length(phyloseq_candidates)
+        )
+    }
+
+    phyloseq_object <- get(phyloseq_candidates)
+}
+
+saveRDS(phyloseq_object, file = "output/phyloseq.rds")
 ]]></configfile>
     </configfiles>
     <inputs>
@@ -382,6 +408,7 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
         <data name="OTUphylo_nwk" format="newick" label="${tool.name} on ${on_string}: Newick-formatted phylogenetic tree between sequences" from_work_dir="output/OTUphylo.nwk" />
         <data name="mapping" format="tabular" label="${tool.name} on ${on_string}: mapping file" from_work_dir="output/primary/in.map" />
         <data name="runlog" format="txt" label="${tool.name} on ${on_string}: main log file" from_work_dir="output/LotuSLogS/LotuS_run.log" />
+        <data name="phyloseq" format="rdata" label="${tool.name} on ${on_string}: phyloseq RDS object" from_work_dir="output/phyloseq.rds" />
     </outputs>
 
     <tests>
@@ -408,6 +435,11 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
                 </assert_contents>
             </output>
             <output name="mapping" file="mapping.txt" compare="diff" />
+            <output name="phyloseq">
+                <assert_contents>
+                    <has_size min="1" />
+                </assert_contents>
+            </output>
         </test>
         <test>
             <conditional name="inputs">
@@ -438,6 +470,11 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
                 </assert_contents>
             </output>
             <output name="mapping" file="mapping_paired.txt" compare="diff" />
+            <output name="phyloseq">
+                <assert_contents>
+                    <has_size min="1" />
+                </assert_contents>
+            </output>
         </test>
     </tests>
 
