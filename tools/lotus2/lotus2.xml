@@ -1,4 +1,4 @@
-<tool id="lotus2" name="LotuS2" version="@VERSION@+galaxy1" profile="20.09">
+<tool id="lotus2" name="LotuS2" version="@VERSION@+galaxy2" profile="20.09">
     <description>fast OTU processing pipeline</description>
     <macros>
         <token name="@VERSION@">2.32</token>
@@ -200,19 +200,24 @@ exit \$EXIT_VALUE
     <configfiles>
         <configfile name="generated_mapping"><![CDATA[#slurp
 #import re
+#def sanitize($s):
+${re.sub('[^\w\-_.]', '_', $s)}#slurp
+#end def
 #def symlink_basename($f):
-    #set $fn = re.sub('[^\w\-_.]', '_', $f.name)
-${fn}#slurp
+${sanitize($f.name)}#slurp
+#end def
+#def sample_identifier($f):
+    #set $sample_id = getattr($f, 'element_identifier', None) or $f.name
+${sanitize($sample_id)}#slurp
 #end def
 #SampleID	fastqFile	SequencingRun
 #if $inputs.paired_or_single == 'single':
     #for $i, $f in enumerate($inputs.input):
-SMPL${i}	${symlink_basename($f)}	a
+${sample_identifier($f)}	${symlink_basename($f)}	a
     #end for
 #else:
     #for $f in $inputs.pair_input:
-#set $sample_id = re.sub('[^\w\-_.]', '_', str($f.element_identifier))
-${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.reverse.dataset)}	a
+${sample_identifier($f)}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.reverse.dataset)}	a
     #end for
 #end if
 ]]></configfile>
@@ -388,18 +393,21 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
             <conditional name="clu_cond">
                 <param name="clustering" value="3" />
             </conditional>
-            <section name="clu_args">
-                <param name="derepMin" value="1" />
-            </section>
             <section name="tax_args">
                 <param name="lulu" value="false" />
+                <param name="buildPhylo" value="0" />
             </section>
-            <section name="other_opts">
-                <param name="platform" value="454" />
-            </section>
-            <output name="otu" file="OTU.txt" compare="sim_size" />
-            <output name="otu_fna" file="OTU.fna" compare="sim_size" />
-            <output name="mapping" file="mapping.txt" />
+            <output name="otu">
+                <assert_contents>
+                    <has_line line="OTU&#009;Anh_sample1.fastq.gz&#009;Anh_sample2.fastq.gz" />
+                </assert_contents>
+            </output>
+            <output name="otu_fna">
+                <assert_contents>
+                    <has_text text="&gt;OTU1" />
+                </assert_contents>
+            </output>
+            <output name="mapping" file="mapping.txt" compare="diff" />
         </test>
         <test>
             <conditional name="inputs">
@@ -417,10 +425,19 @@ ${sample_id}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.rever
             </conditional>
             <section name="tax_args">
                 <param name="lulu" value="true" />
+                <param name="buildPhylo" value="0" />
             </section>
-            <output name="otu" file="OTU_paired.txt" compare="sim_size" />
-            <output name="otu_fna" file="OTU_paired.fna" compare="sim_size" />
-            <output name="mapping" file="mapping_paired.txt" />
+            <output name="otu">
+                <assert_contents>
+                    <has_line line="OTU&#009;Anh_sample" />
+                </assert_contents>
+            </output>
+            <output name="otu_fna">
+                <assert_contents>
+                    <has_text text="&gt;ASV1" />
+                </assert_contents>
+            </output>
+            <output name="mapping" file="mapping_paired.txt" compare="diff" />
         </test>
     </tests>
 
