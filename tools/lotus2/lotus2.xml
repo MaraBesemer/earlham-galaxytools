@@ -201,7 +201,7 @@ exit \$EXIT_VALUE
         <configfile name="generated_mapping"><![CDATA[#slurp
 #import re
 #def sanitize($s):
-${re.sub('[^\w\-_.]', '_', str($s))}#slurp
+${re.sub('[^\w\-_.]', '_', $s)}#slurp
 #end def
 #def symlink_basename($f):
 ${sanitize($f.name)}#slurp
