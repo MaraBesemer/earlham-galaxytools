@@ -225,7 +225,7 @@ ${sample_identifier($f)}	${symlink_basename($f.forward.dataset)},${symlink_basen
     #end for
 #end if
 ]]></configfile>
-        <configfile name="export_phyloseq_rds"><![CDATA[
+    <configfile name="export_phyloseq_rds"><![CDATA[
 loaded_objects <- load("output/phyloseq.Rdata")
 
 if (length(loaded_objects) == 1) {
