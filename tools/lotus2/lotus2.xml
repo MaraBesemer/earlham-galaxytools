@@ -191,12 +191,9 @@ lotus2
 #if $tax_args.taxExcludeGrep:
     -taxExcludeGrep '$tax_args.taxExcludeGrep'
 #end if
-; EXIT_VALUE=\$? ;
+&& Rscript '$export_phyloseq_rds';
+EXIT_VALUE=\$? ;
 
-if [ "\$EXIT_VALUE" -eq 0 ]; then
-    Rscript '$export_phyloseq_rds';
-fi
-&&
 zip -8 -r -v output.zip output/
 &&
 exit \$EXIT_VALUE
