@@ -100,14 +100,11 @@ mkdir -p "\$PWD/input" &&
     #set map = $generated_mapping
 #end if
 
-THREADS="\${GALAXY_SLOTS:-1}" &&
-if [ "\$THREADS" -lt 2 ]; then THREADS=2; fi &&
-
 lotus2
 -i "\$PWD/input/"
 -o output
 -tmpDir tmp_folder
--threads "\$THREADS"
+-threads "\${GALAXY_SLOTS:-2}"
 -map '$map'
 #if $other_opts.sdmopt:
     -sdmopt '$other_opts.sdmopt'
