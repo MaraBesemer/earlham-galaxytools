@@ -40,6 +40,11 @@
         <requirement type="package" version="4.4.3">r-base</requirement>
         <requirement type="package" version="3.0">zip</requirement>
     </requirements>
+
+    <required_files>
+        <include type="literal" path="export_phyloseq_rds.R"/>
+    </required_files>
+
     <version_command>lotus2 --version</version_command>
     <command detect_errors="exit_code"><![CDATA[
 #import re
@@ -75,17 +80,17 @@ fi &&
 ${fn}#slurp
 #end def
 
-mkdir -p "\$PWD/input" &&
+mkdir input &&
 #if $inputs.paired_or_single == 'single':
     #for $f in $inputs.input:
-        ln -s '$f' "\$PWD/input/${symlink_basename($f)}" &&
+        ln -s '$f' "input/${symlink_basename($f)}" &&
     #end for
 #else:
     #for $f in $inputs.pair_input:
         #set $forward = $f['forward']
         #set $reverse = $f['reverse']
-        ln -s '$forward' "\$PWD/input/${symlink_basename($forward)}" &&
-        ln -s '$reverse' "\$PWD/input/${symlink_basename($reverse)}" &&
+        ln -s '$forward' "input/${symlink_basename($forward)}" &&
+        ln -s '$reverse' "input/${symlink_basename($reverse)}" &&
     #end for
 #end if
 
@@ -101,7 +106,7 @@ mkdir -p "\$PWD/input" &&
 #end if
 
 lotus2
--i "\$PWD/input/"
+-i "input/"
 -o output
 -tmpDir tmp_folder
 -threads "\${GALAXY_SLOTS:-2}"
@@ -193,7 +198,7 @@ lotus2
     -taxExcludeGrep '$tax_args.taxExcludeGrep'
 #end if
 &&
-Rscript '$export_phyloseq_rds'
+Rscript '$__tool_directory__/export_phyloseq_rds.R'
 &&
 zip -8 -r -v output.zip output/
     ]]></command>
@@ -208,7 +213,7 @@ ${re.sub('[^\w\-_.]', '_', $s)}#slurp
 ${sanitize($f.name)}#slurp
 #end def
 #def sample_identifier($f):
-#set $sample_id = getattr($f, 'element_identifier', None) or $f.name
+    #set $sample_id = getattr($f, 'element_identifier', None) or $f.name
 ${sanitize($sample_id)}#slurp
 #end def
 #SampleID${tab}fastqFile${tab}SequencingRun
@@ -223,28 +228,6 @@ ${sample_identifier($f)}${tab}${symlink_basename($f)}${tab}a
 ${sample_identifier($f)}${tab}${symlink_basename($forward)},${symlink_basename($reverse)}${tab}a
 #end for
 #end if
-]]></configfile>
-    <configfile name="export_phyloseq_rds"><![CDATA[
-loaded_objects <- load("output/phyloseq.Rdata")
-
-if (length(loaded_objects) == 1) {
-    phyloseq_object <- get(loaded_objects)
-} else {
-    phyloseq_candidates <- loaded_objects[
-        vapply(loaded_objects, function(name) inherits(get(name), "phyloseq"), logical(1))
-    ]
-
-    if (length(phyloseq_candidates) != 1) {
-        stop(
-            "Expected one phyloseq object in output/phyloseq.Rdata, found ",
-            length(phyloseq_candidates)
-        )
-    }
-
-    phyloseq_object <- get(phyloseq_candidates)
-}
-
-saveRDS(phyloseq_object, file = "output/phyloseq.rds")
 ]]></configfile>
     </configfiles>
     <inputs>
