@@ -37,6 +37,8 @@
     </xrefs>
     <requirements>
         <requirement type="package" version="@VERSION@">lotus2</requirement>
+        <requirement type="package" version="4.4.3">r-base</requirement>
+        <requirement type="package" version="3.0">zip</requirement>
     </requirements>
     <version_command>lotus2 --version</version_command>
     <command detect_errors="exit_code"><![CDATA[
@@ -73,16 +75,17 @@ fi &&
 ${fn}#slurp
 #end def
 
-mkdir input
-&&
+mkdir -p "\$PWD/input" &&
 #if $inputs.paired_or_single == 'single':
     #for $f in $inputs.input:
-        ln -s '$f' 'input/${symlink_basename($f)}' &&
+        ln -s '$f' "\$PWD/input/${symlink_basename($f)}" &&
     #end for
 #else:
     #for $f in $inputs.pair_input:
-        ln -s '$f.forward' 'input/${symlink_basename($f.forward.dataset)}' &&
-        ln -s '$f.reverse' 'input/${symlink_basename($f.reverse.dataset)}' &&
+        #set $forward = $f['forward']
+        #set $reverse = $f['reverse']
+        ln -s '$forward' "\$PWD/input/${symlink_basename($forward)}" &&
+        ln -s '$reverse' "\$PWD/input/${symlink_basename($reverse)}" &&
     #end for
 #end if
 
@@ -97,13 +100,14 @@ mkdir input
     #set map = $generated_mapping
 #end if
 
-set +e &&
+THREADS="\${GALAXY_SLOTS:-1}" &&
+if [ "\$THREADS" -lt 2 ]; then THREADS=2; fi &&
 
 lotus2
--i input/
+-i "\$PWD/input/"
 -o output
 -tmpDir tmp_folder
--threads "\${GALAXY_SLOTS:-1}"
+-threads "\$THREADS"
 -map '$map'
 #if $other_opts.sdmopt:
     -sdmopt '$other_opts.sdmopt'
@@ -191,15 +195,15 @@ lotus2
 #if $tax_args.taxExcludeGrep:
     -taxExcludeGrep '$tax_args.taxExcludeGrep'
 #end if
-&& Rscript '$export_phyloseq_rds';
-
-zip -8 -r -v output.zip output/
 &&
-exit \$EXIT_VALUE
+Rscript '$export_phyloseq_rds'
+&&
+zip -8 -r -v output.zip output/
     ]]></command>
     <configfiles>
         <configfile name="generated_mapping"><![CDATA[#slurp
 #import re
+#set $tab = '\t'
 #def sanitize($s):
 ${re.sub('[^\w\-_.]', '_', $s)}#slurp
 #end def
@@ -207,18 +211,20 @@ ${re.sub('[^\w\-_.]', '_', $s)}#slurp
 ${sanitize($f.name)}#slurp
 #end def
 #def sample_identifier($f):
-    #set $sample_id = getattr($f, 'element_identifier', None) or $f.name
+#set $sample_id = getattr($f, 'element_identifier', None) or $f.name
 ${sanitize($sample_id)}#slurp
 #end def
-#SampleID	fastqFile	SequencingRun
+#SampleID${tab}fastqFile${tab}SequencingRun
 #if $inputs.paired_or_single == 'single':
-    #for $i, $f in enumerate($inputs.input):
-${sample_identifier($f)}	${symlink_basename($f)}	a
-    #end for
+#for $f in $inputs.input:
+${sample_identifier($f)}${tab}${symlink_basename($f)}${tab}a
+#end for
 #else:
-    #for $f in $inputs.pair_input:
-${sample_identifier($f)}	${symlink_basename($f.forward.dataset)},${symlink_basename($f.reverse.dataset)}	a
-    #end for
+#for $f in $inputs.pair_input:
+#set $forward = $f['forward']
+#set $reverse = $f['reverse']
+${sample_identifier($f)}${tab}${symlink_basename($forward)},${symlink_basename($reverse)}${tab}a
+#end for
 #end if
 ]]></configfile>
     <configfile name="export_phyloseq_rds"><![CDATA[
